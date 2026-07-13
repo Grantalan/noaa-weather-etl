@@ -1,4 +1,4 @@
-This is my very first ETL pipeline - open to recommendations, tips, and criticism. i.e. recovering data scientist - aspiring engineer :)
+This is my very first ETL pipeline - open to recommendations, tips, and criticism. i.e. recovering data scientist - aspiring engineer.
 
 ![NOAA](./assets/noaa1.jpg)
 
