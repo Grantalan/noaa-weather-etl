@@ -42,7 +42,8 @@ def extract_stations():
     column_types = {
         'station_id': str, 
         'state': str, 
-        'gsn_flag': str, 
+        'gsn_flag': str,
+        'hcn_crn_flag': str, 
         'wmo_id': str
     }
 
