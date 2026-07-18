@@ -21,5 +21,10 @@ def get_engine():
 
 def load_df(engine, df, table_name):
     """Writes df to table_name, replacing it entirely if it already exists."""
-    df.to_sql(table_name, engine, if_exists="replace", index=False)
+    df.to_sql(
+        table_name, 
+        engine, if_exists="append", 
+        index=False,
+        method="multi"
+    )
     print(f"Loaded {len(df)} rows into {table_name}")
