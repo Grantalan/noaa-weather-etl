@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
@@ -20,13 +21,17 @@ def get_engine():
 
 
 def load_df(engine, df, table_name):
-    """Writes df to table_name, replacing it entirely if it already exists."""
-    df.to_sql(
-        table_name, 
-        engine, 
-        if_exists="replace", 
+    """Writes only new or changed rows to table_name."""
+    existing_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+    merged = df.merge(existing_df, how="left", indicator=True)
+    rows_to_write = merged[merged["_merge"] == "left_only"].drop(columns="_merge")
+
+    rows_to_write.to_sql(
+        table_name,
+        engine,
+        if_exists="append",
         index=False,
         method="multi",
-        chunksize=10000
+        chunksize=1000
     )
-    print(f"Loaded {len(df)} rows into {table_name}")
+    print(f"Loaded {len(rows_to_write)} rows into {table_name}")
