@@ -23,7 +23,8 @@ def load_df(engine, df, table_name):
     """Writes df to table_name, replacing it entirely if it already exists."""
     df.to_sql(
         table_name, 
-        engine, if_exists="append", 
+        engine, 
+        if_exists="replace", 
         index=False,
         method="multi",
         chunksize=10000
