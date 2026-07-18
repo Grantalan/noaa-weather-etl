@@ -25,6 +25,7 @@ def load_df(engine, df, table_name):
         table_name, 
         engine, if_exists="append", 
         index=False,
-        method="multi"
+        method="multi",
+        chunksize=10000
     )
     print(f"Loaded {len(df)} rows into {table_name}")
