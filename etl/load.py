@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
 load_dotenv()
 
@@ -22,7 +22,11 @@ def get_engine():
 
 def load_df(engine, df, table_name):
     """Writes only new or changed rows to table_name."""
-    existing_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+    try:
+        existing_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+    except Exception:
+        existing_df = df.iloc[0:0]
+
     merged = df.merge(existing_df, how="left", indicator=True)
     rows_to_write = merged[merged["_merge"] == "left_only"].drop(columns="_merge")
 
