@@ -1,20 +1,41 @@
+from datetime import date
+
 import pandas as pd
 
 # Source: https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt
 
 
 def extract():
-    """Extract raw 2020 year.csv with all daily values."""
+    """Pull raw 2020 year.csv with all daily values directly from NOAA."""
     col_names = ['id', 'date', 'element', 'value',
                  'mflag', 'qflag', 'sflag', 'obs_time']
 
+    url = "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/2020.csv.gz"
+
     twentytwenty_dly = pd.read_csv(
-        'data/raw/2020.csv.gz',
+        url,
         compression='gzip',
         header=None,
         names=col_names
     )
     return twentytwenty_dly
+
+
+def extract_current_year():
+    """Pull the current year's daily values directly from NOAA."""
+    col_names = ['id', 'date', 'element', 'value',
+                 'mflag', 'qflag', 'sflag', 'obs_time']
+
+    year = date.today().year
+    url = f"https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/{year}.csv.gz"
+
+    current_dly = pd.read_csv(
+        url,
+        compression='gzip',
+        header=None,
+        names=col_names
+    )
+    return current_dly
 
 
 def extract_stations():
