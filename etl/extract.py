@@ -1,24 +1,29 @@
 from datetime import date
 
 import pandas as pd
+from pydantic import TypeAdapter
+
+from etl.models import Station
 
 # Source: https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt
 
+station_list = TypeAdapter(list[Station])
 
-def extract():
-    """Pull raw 2020 year.csv with all daily values directly from NOAA."""
+
+def extract(year):
+    """Pull a given year's daily values directly from NOAA."""
     col_names = ['id', 'date', 'element', 'value',
                  'mflag', 'qflag', 'sflag', 'obs_time']
 
-    url = "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/2020.csv.gz"
+    url = f"https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/{year}.csv.gz"
 
-    twentytwenty_dly = pd.read_csv(
+    dly = pd.read_csv(
         url,
         compression='gzip',
         header=None,
         names=col_names
     )
-    return twentytwenty_dly
+    return dly
 
 
 def extract_current_year():
@@ -77,5 +82,7 @@ def extract_stations():
         dtype=column_types,
         keep_default_na=False
     )
+
+    station_list.validate_python(station_metadata.to_dict(orient="records"))
 
     return station_metadata
