@@ -1,3 +1,4 @@
+import io
 import os
 
 import pandas as pd
@@ -49,14 +50,19 @@ def upsert_daily(engine, df, target_table, staging_table="daily_upsert"):
     blanks out a value that was already there. Requires a UNIQUE (id, date)
     constraint on target_table.
     """
-    df.to_sql(
-        staging_table,
-        engine,
-        if_exists="replace",
-        index=False,
-        method="multi",
-        chunksize=1000
-    )
+    df.head(0).to_sql(staging_table, engine, if_exists="replace", index=False)
+
+    buf = io.StringIO()
+    df.to_csv(buf, index=False, header=False)
+    buf.seek(0)
+
+    raw_conn = engine.raw_connection()
+    try:
+        with raw_conn.cursor() as cur:
+            cur.copy_expert(f"COPY {staging_table} FROM STDIN WITH CSV", buf)
+        raw_conn.commit()
+    finally:
+        raw_conn.close()
 
     value_cols = [c for c in df.columns if c not in ("id", "date")]
     col_list = ", ".join(f'"{c}"' for c in df.columns)
@@ -66,8 +72,10 @@ def upsert_daily(engine, df, target_table, staging_table="daily_upsert"):
 
     upsert_sql = f"""
         INSERT INTO {target_table} ({col_list})
-        SELECT {col_list} FROM {staging_table}
-        ON CONFLICT (id, date) DO UPDATE SET {set_clause};
+        SELECT {col_list} 
+        FROM {staging_table}
+        ON CONFLICT (id, date) 
+        DO UPDATE SET {set_clause};
     """
 
     with engine.begin() as conn:
