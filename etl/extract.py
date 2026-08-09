@@ -23,16 +23,17 @@ def fetch(url):
     the files arrive at roughly 190 KB/s, which makes downloading, not parsing,
     the bulk of the pipeline's runtime.
     """
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    path = RAW_DIR / url.rsplit("/", 1)[-1]
+    RAW_DIR.mkdir(parents=True, exist_ok=True)  # Create data/raw if it doesn't exist; raw files are gitignored.
+    path = RAW_DIR / url.rsplit("/", 1)[-1]      
     etag_path = path.with_suffix(path.suffix + ".etag")
-
+    
+    # If we have a cached copy and its ETag, attach it for a conditional request.
     request = urllib.request.Request(url)
     if path.exists() and etag_path.exists():
-        request.add_header("If-None-Match", etag_path.read_text())
+        request.add_header("If-None-Match", etag_path.read_text())  # Read etag for server comparison.
 
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request) as response:  # Send request to NOAA.
             path.write_bytes(response.read())
             etag = response.headers.get("ETag")
             if etag:
