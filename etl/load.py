@@ -59,14 +59,19 @@ def copy_into_staging(engine, df, staging_table, target_table):
         conn.execute(text(f"DROP TABLE IF EXISTS {staging_table}"))
         conn.execute(text(f"CREATE TABLE {staging_table} (LIKE {target_table})"))
 
-    # NaN becomes an empty field, which COPY ... FORMAT csv reads as NULL --
-    # which is what the COALESCE in the upsert below expects.
+    # Get the underlying DBAPI/psycopg2 connection so we can use COPY.
     raw_conn = engine.raw_connection()
     try:
-        with tempfile.TemporaryFile(mode="w+", newline="") as buffer:
+        with tempfile.TemporaryFile(mode="w+", newline="") as buffer: # Create temp file to store df as csv
             df.to_csv(buffer, index=False, header=False)
+            
+            # Rewind the buffer so COPY can read the CSV from the beginning.
             buffer.seek(0)
+
+            # Create a cursor for sending commands and data to PostgreSQL.
             with raw_conn.cursor() as cur:
+                
+                # Execute COPY and stream the CSV data from buffer into PostgreSQL.
                 cur.copy_expert(
                     f"COPY {staging_table} ({columns}) FROM STDIN WITH (FORMAT csv)",
                     buffer,
