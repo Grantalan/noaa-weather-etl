@@ -1,4 +1,7 @@
+import urllib.error
+import urllib.request
 from datetime import date
+from pathlib import Path
 
 import pandas as pd
 from pydantic import TypeAdapter
@@ -9,6 +12,39 @@ from etl.models import Station
 
 station_list = TypeAdapter(list[Station])
 
+RAW_DIR = Path("data/raw")
+
+
+def fetch(url):
+    """Download url into data/raw/, reusing the cached copy if NOAA says it's unchanged.
+
+    NOAA serves an ETag on these files, so a run that finds nothing new pays a
+    single conditional request instead of a full re-download. That matters here --
+    the files arrive at roughly 190 KB/s, which makes downloading, not parsing,
+    the bulk of the pipeline's runtime.
+    """
+    RAW_DIR.mkdir(parents=True, exist_ok=True)  # Create data/raw if it doesn't exist; raw files are gitignored.
+    path = RAW_DIR / url.rsplit("/", 1)[-1]      
+    etag_path = path.with_suffix(path.suffix + ".etag")
+    
+    # If we have a cached copy and its ETag, attach it for a conditional request.
+    request = urllib.request.Request(url)
+    if path.exists() and etag_path.exists():
+        request.add_header("If-None-Match", etag_path.read_text())  # Read etag for server comparison.
+
+    try:
+        with urllib.request.urlopen(request) as response:  # Send request to NOAA.
+            path.write_bytes(response.read())
+            etag = response.headers.get("ETag")
+            if etag:
+                etag_path.write_text(etag)
+    except urllib.error.HTTPError as exc:
+        # 304 means the cached copy is still current; anything else is a real error.
+        if exc.code != 304:
+            raise
+
+    return path
+
 
 def extract(year):
     """Pull a given year's daily values directly from NOAA."""
@@ -18,7 +54,7 @@ def extract(year):
     url = f"https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/{year}.csv.gz"
 
     dly = pd.read_csv(
-        url,
+        fetch(url),
         compression='gzip',
         header=None,
         names=col_names
@@ -35,7 +71,7 @@ def extract_current_year():
     url = f"https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/{year}.csv.gz"
 
     current_dly = pd.read_csv(
-        url,
+        fetch(url),
         compression='gzip',
         header=None,
         names=col_names
@@ -75,7 +111,7 @@ def extract_stations():
 
     # Safely extract the data
     station_metadata = pd.read_fwf(
-        url,
+        fetch(url),
         colspecs=col_specs,
         header=None,
         names=column_names,
