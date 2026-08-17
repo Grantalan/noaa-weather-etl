@@ -1,35 +1,24 @@
 """Configures Metabase via its REST API: creates the admin account and
-connects it to your existing Postgres. Safe to re-run.
+connects it to Postgres. Safe to re-run.
 """
-import json
 import os
-import urllib.request
 
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
-MB_URL = os.getenv("MB_URL", "http://localhost:3000")
+MB = os.getenv("MB_URL", "http://localhost:3000")
+db_name = os.getenv("PGDATABASE", "ghcnd_etl")
 
-
-def call(method, path, body=None, token=None):
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["X-Metabase-Session"] = token
-    data = json.dumps(body).encode() if body else None
-    req = urllib.request.Request(f"{MB_URL}{path}", data=data, headers=headers, method=method)
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
-
-
-props = call("GET", "/api/session/properties")
+props = requests.get(f"{MB}/api/session/properties").json()
 
 if props["has-user-setup"]:
-    token = call("POST", "/api/session", {
+    token = requests.post(f"{MB}/api/session", json={
         "username": os.getenv("MB_ADMIN_EMAIL"),
         "password": os.getenv("MB_ADMIN_PASSWORD"),
-    })["id"]
+    }).json()["id"]
 else:
-    token = call("POST", "/api/setup", {
+    token = requests.post(f"{MB}/api/setup", json={
         "token": props["setup-token"],
         "user": {
             "first_name": os.getenv("MB_ADMIN_FIRST_NAME"),
@@ -38,27 +27,27 @@ else:
             "password": os.getenv("MB_ADMIN_PASSWORD"),
         },
         "prefs": {"site_name": os.getenv("MB_SITE_NAME", "Metabase")},
-    })["id"]
+    }).json()["id"]
 
-db_name = os.getenv("PGDATABASE", "ghcnd_etl")
+headers = {"X-Metabase-Session": token}
 already_connected = any(
-    db["name"] == db_name for db in call("GET", "/api/database", token=token)["data"]
+    db["name"] == db_name for db in requests.get(f"{MB}/api/database", headers=headers).json()["data"]
 )
 
 if already_connected:
     print(f"Database '{db_name}' already connected, skipping.")
 else:
-    # host.docker.internal = Docker Desktop's DNS name for "the Mac this
-    # container runs on" -- "localhost" here would mean the container itself.
-    call("POST", "/api/database", {
+    # "postgres" = the Compose service name -- Metabase and Postgres share
+    # the same Docker network, so they reach each other by service name.
+    requests.post(f"{MB}/api/database", headers=headers, json={
         "engine": "postgres",
         "name": db_name,
         "details": {
-            "host": "host.docker.internal",
+            "host": "postgres",
             "port": int(os.getenv("PGPORT", 5432)),
             "dbname": db_name,
             "user": os.getenv("PGUSER"),
             "password": os.getenv("PGPASSWORD"),
         },
-    }, token=token)
+    })
     print(f"Connected database '{db_name}'.")
