@@ -1,15 +1,44 @@
 services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # The official Postgres image auto-runs any .sql files found here, in
+      # filename order, the first time it starts on an empty database --
+      # that's the entire schema setup, for free.
+      - ./ddl:/docker-entrypoint-initdb.d
+
   metabase:
     image: metabase/metabase:latest
     ports:
       - "3000:3000"
     volumes:
       # Metabase's own app data (dashboards, users, saved questions) lives
-      # here, persisted across restarts. Your actual weather data stays in
-      # your existing Postgres -- Metabase just connects to it.
+      # here, persisted across restarts.
       - metabase_data:/metabase-data
     environment:
       MB_DB_FILE: /metabase-data/metabase.db
 
+  # Not a long-running service -- profiles keeps it out of `docker compose up`.
+  # Run scripts on demand: docker compose run --rm etl uv run python main.py
+  etl:
+    build: .
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${PGDATABASE}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+    depends_on:
+      - postgres
+    profiles: ["etl"]
+
 volumes:
+  pg_data:
   metabase_data:
