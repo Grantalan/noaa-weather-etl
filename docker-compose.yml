@@ -26,7 +26,11 @@ services:
       MB_DB_FILE: /metabase-data/metabase.db
 
   # Not a long-running service -- profiles keeps it out of `docker compose up`.
-  # Run scripts on demand: docker compose run --rm etl uv run python main.py
+  # main.py covers the regular cadence (today's actuals + Open-Meteo forecast):
+  #   docker compose run --rm etl uv run python main.py
+  # backfill.py (5 years of history) is a one-off you run manually, not part
+  # of the regular cadence:
+  #   docker compose run --rm etl uv run python backfill.py
   etl:
     build: .
     environment:
