@@ -1,0 +1,15 @@
+services:
+  metabase:
+    image: metabase/metabase:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      # Metabase's own app data (dashboards, users, saved questions) lives
+      # here, persisted across restarts. Your actual weather data stays in
+      # your existing Postgres -- Metabase just connects to it.
+      - metabase_data:/metabase-data
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+
+volumes:
+  metabase_data:
