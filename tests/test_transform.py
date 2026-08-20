@@ -19,6 +19,21 @@ class TestTransform(unittest.TestCase):
         with self.assertRaises(ValidationError):
             transform(bad_df)
 
+    def test_transform_converts_tenths_to_units(self):
+        """TMAX/TMIN/PRCP arrive from GHCNd in tenths and must be divided by 10."""
+
+        dly = pd.DataFrame([
+            {"id": "STA1", "date": 20200101, "element": "TMAX", "value": 350, "qflag": None},
+            {"id": "STA1", "date": 20200101, "element": "TMIN", "value": -50, "qflag": None},
+            {"id": "STA1", "date": 20200101, "element": "PRCP", "value": 100, "qflag": None},
+        ])
+
+        result = transform(dly).iloc[0]
+
+        self.assertEqual(result["TMAX"], 35.0)
+        self.assertEqual(result["TMIN"], -5.0)
+        self.assertEqual(result["PRCP"], 10.0)
+
 
 if __name__ == "__main__":
     unittest.main()

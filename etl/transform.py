@@ -7,6 +7,10 @@ CORE_ELEMENTS = ['TMAX', 'TMIN', 'PRCP', 'SNOW', 'SNWD']
 MAX_ELEMENTS = {'TMAX', 'PRCP', 'SNOW', 'SNWD'}
 MIN_ELEMENTS = {'TMIN'}
 
+# GHCNd stores TMAX/TMIN in tenths of a degree C and PRCP in tenths of mm.
+# SNOW/SNWD are already whole mm, so they're left alone.
+TENTHS_ELEMENTS = ['TMAX', 'TMIN', 'PRCP']
+
 observation_list = TypeAdapter(list[DailyObservation])
 
 
@@ -45,6 +49,14 @@ def pivot_to_wide(dly):
     ).reset_index()
 
 
+def convert_tenths_to_units(dly):
+    """Convert TMAX/TMIN/PRCP from GHCNd's tenths storage to whole degrees C / mm."""
+    dly = dly.copy()
+    for element in TENTHS_ELEMENTS:
+        dly[element] = dly[element] / 10
+    return dly
+
+
 def parse_observation_dates(dly):
     """Convert the NOAA YYYYMMDD date column into a Python date."""
     dly = dly.copy()
@@ -64,4 +76,5 @@ def transform(twentytwenty_dly):
     combined = combine_duplicate_observations(filtered)
     pivoted = pivot_to_wide(combined)
     dated = parse_observation_dates(pivoted)
-    return validate_observations(dated)
+    validated = validate_observations(dated)
+    return convert_tenths_to_units(validated)
