@@ -1,7 +1,7 @@
 import pandas as pd
 from pydantic import TypeAdapter
 
-from etl.models import DailyObservation
+from ghcnd_etl.models import DailyObservation
 
 observation_list = TypeAdapter(list[DailyObservation])
 

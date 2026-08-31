@@ -4,7 +4,7 @@ from datetime import date
 import pandas as pd
 from pydantic import ValidationError
 
-from etl.transform import transform
+from ghcnd_etl.transform import transform
 
 
 class TestTransform(unittest.TestCase):

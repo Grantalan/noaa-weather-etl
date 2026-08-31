@@ -1,7 +1,7 @@
 import pandas as pd
 from pydantic import TypeAdapter
 
-from etl.models import DailyObservation
+from ghcnd_etl.models import DailyObservation
 
 CORE_ELEMENTS = ['TMAX', 'TMIN', 'PRCP', 'SNOW', 'SNWD']
 MAX_ELEMENTS = {'TMAX', 'PRCP', 'SNOW', 'SNWD'}
