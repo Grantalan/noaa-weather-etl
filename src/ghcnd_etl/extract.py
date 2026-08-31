@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 from pydantic import TypeAdapter
 
-from etl.models import Station
+from ghcnd_etl.models import Station
 
 # Source: https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt
 

@@ -1,7 +1,7 @@
 import pandas as pd
 from pydantic import TypeAdapter
 
-from etl.models import DailyObservation
+from ghcnd_etl.models import DailyObservation
 
 CORE_ELEMENTS = ['TMAX', 'TMIN', 'PRCP', 'SNOW', 'SNWD']
 MAX_ELEMENTS = {'TMAX', 'PRCP', 'SNOW', 'SNWD'}
@@ -70,9 +70,9 @@ def validate_observations(dly):
     return dly
 
 
-def transform(twentytwenty_dly):
+def transform(dly):
     """Keep core, quality-passed elements; combine duplicate readings; pivot to wide format."""
-    filtered = filter_quality_observations(twentytwenty_dly)
+    filtered = filter_quality_observations(dly)
     combined = combine_duplicate_observations(filtered)
     pivoted = pivot_to_wide(combined)
     dated = parse_observation_dates(pivoted)

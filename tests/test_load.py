@@ -4,7 +4,7 @@ from datetime import date
 import pandas as pd
 from sqlalchemy import text
 
-from etl.load import get_engine, upsert_daily
+from ghcnd_etl.load import get_engine, upsert_daily
 
 
 class TestUpsertDaily(unittest.TestCase):
