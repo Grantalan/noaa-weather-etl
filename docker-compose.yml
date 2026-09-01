@@ -39,6 +39,12 @@ services:
       PGDATABASE: ${PGDATABASE}
       PGUSER: ${PGUSER}
       PGPASSWORD: ${PGPASSWORD}
+    volumes:
+      # Bind-mounted so the NOAA/Open-Meteo cache (etag files) and
+      # data/processed/stations.csv survive after the container exits --
+      # without this, --rm throws them away and every run re-downloads.
+      - ./data/raw:/app/data/raw
+      - ./data/processed:/app/data/processed
     depends_on:
       - postgres
     profiles: ["etl"]
